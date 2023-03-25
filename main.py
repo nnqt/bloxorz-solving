@@ -7,10 +7,7 @@ from app.a_star_solver import A_Star_Solver
 from app.breadth_first_search import Breadth_First_Search
 from app.monte_carlo_tree_search import Monte_Carlo_Tree_Search
 import time
-import json
 
-import pandas as pd
-import matplotlib.pyplot as plt
 import plotly.express as px
 
 
