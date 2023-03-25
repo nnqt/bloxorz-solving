@@ -35,10 +35,10 @@ class Game:
         start_time = time.time()
         if(choise == 1):
             paths = self.breadth_first_search_solver_agent.solve(self.terrain)
-            fig = px.line(self.breadth_first_search_solver_agent.data_open_queue)
+            fig = px.line(self.breadth_first_search_solver_agent.data_all_queue)
         elif(choise == 2):
             paths = self.a_star_solver_agent.solve(self.terrain)
-            fig = px.line(self.a_star_solver_agent.data_open_queue)
+            fig = px.line(self.a_star_solver_agent.data_all_queue)
         elif(choise == 3):
             paths = self.monte_carlo_tree_search_agent.solve(self.terrain)
             fig = px.line(self.monte_carlo_tree_search_agent.data_open_queue)
@@ -48,7 +48,7 @@ class Game:
         print("--- Solved using A* in %s seconds ---" % (time.time() - start_time))
         print("Solution: ", self.pretty_print_paths(paths))
 
-        #fig.show()
+        fig.show()
 
     def pretty_print_paths(self, paths):
         """
