@@ -11,31 +11,31 @@ class Monte_Carlo_Tree_Search:
     def __init__(self) :
         self.data_open_queue = []
         self.data_all_queue = []
-        self.open_list = []
     
     def solve(self, terrain:Terrain) -> list:
 
         # Init root node
         start_pos = terrain.start
         start_block = Block(start_pos, start_pos)
-        start_node = Node(start_block, move=None, parent=None, f=0, g=0, h=0, terrain=terrain)
+        start_node = Node(start_block, move=None, parent=None, f=0, g=0, h=0, terrain=terrain, child=[])
 
-        self.open_list.append(start_node)
-        current_node = self.open_list[0]
+        children = self.get_children(start_node)
+        start_node.child = children
+
+        #self.open_list.append(start_node)
+        current_node = start_node
 
         # Use MCTS to find leaf node
         while current_node is not None:
             if current_node.terrain.done(current_node.block):
                 break
             current_node = self.monte_carlo_tree_search(current_node)
+            if current_node is None:
+                print("Fail")
+                return ""
             print( "Ta chon " + str(current_node.move))
             print("")
-            self.open_list.append(current_node)
-            self.data_open_queue.append(len(self.open_list))
 
-        if current_node is None:
-            print("Fail")
-            return ""
         # BackTrack Moves
         path = []
         current = current_node
@@ -44,68 +44,116 @@ class Monte_Carlo_Tree_Search:
             current = current.parent
         return path[::-1] # Return reversed order of Moves
 
-    def monte_carlo_tree_search(self, current_node: Node) -> Node:
-        visited_list = []
+    def monte_carlo_tree_search(self, root: Node) -> Node:
+        # visited_list = []
 
+        # timeout = 5
+        # timeout_start = time.time()
+        # #for x in range(10):
+        # while time.time() < timeout_start + timeout:
+        #     leaf = self.traverse(current_node, visited_list) # Selection
+        #     if leaf not in visited_list:
+        #         visited_list.append(leaf)
+        #     if leaf is None:
+        #         simulation_result = 0
+        #     else:
+        #         simulation_result = self.rollout(leaf) # Simulation
+        #     self.backpropagate(leaf, result= simulation_result) # Backpropagation
+        # print("------------------")
+        # for x in visited_list:
+        #     if x:
+        #         print("Lua chon: " + str(x.move) + " co ti le win la: " + str(x.reward) + " duoc duyet qua: " + str(x.n) + " lan")
+        #     else:
+        #         print("Khong tim duoc duong di")
+        # return self.best_child(visited_list)
+        expand_list = []
         timeout = 5
         timeout_start = time.time()
-        #for x in range(10):
         while time.time() < timeout_start + timeout:
-            leaf = self.traverse(current_node, visited_list) # Selection
-            if leaf not in visited_list:
-                visited_list.append(leaf)
-            if leaf is None:
-                simulation_result = 0
-            else:
-                simulation_result = self.rollout(leaf) # Simulation
-            self.backpropagate(leaf, result= simulation_result) # Backpropagation
-        print("------------------")
-        for x in visited_list:
-            if x:
-                print("Lua chon: " + str(x.move) + " co ti le win la: " + str(x.reward) + " duoc duyet qua: " + str(x.n) + " lan")
-            else:
-                print("Khong tim duoc duong di")
-        return self.best_child(visited_list)
+        #for x in range(10):
+            leaf = self.traverse(root, expand_list)
+            simulation_result = self.rollout(leaf) 
+            self.backpropagate(leaf, result=simulation_result)
+        
+        first = True
+        maxUCT = 0
+        maxIndex = 0
+
+        if not root.child:
+            return None
+
+        for index, child in enumerate(root.child):
+            if child:
+                uctVal = self.calculate_uct(child)
+            if first: 
+                maxUCT = uctVal
+                first = False
+            if uctVal > maxUCT:
+                maxUCT = uctVal
+                maxIndex = index
+        
+        self.data_all_queue.append(len(expand_list))
+        return root.child[maxIndex]
     
-    def traverse(self, current_node: Node, visited_list: list) -> Node:
-        children = self.get_children(current_node)
-        unvisited_node = None
-        best_uct_node = None
-        for child in children:
-            if current_node.parent is not None:
-                if child == current_node.parent:
-                    children.remove(child)
-            # if child in self.open_list:
-            #     children.remove(child)
-        for child in children:
-            if child not in visited_list:
-                unvisited_node = child
-                break
-        if not unvisited_node:
-            best_uct_node = self.best_uct(visited_list)
-            # if best_uct_node is None:
-            #     return None
-        return unvisited_node or best_uct_node
+    def traverse(self, current_node: Node, expand_list: list) -> Node:
+        # children = self.get_children(current_node)
+        # unvisited_node = None
+        # best_uct_node = None
+        # for child in children:
+        #     if current_node.parent is not None:
+        #         if child == current_node.parent:
+        #             children.remove(child)
+        #     # if child in self.open_list:
+        #     #     children.remove(child)
+        # for child in children:
+        #     if child not in visited_list:
+        #         unvisited_node = child
+        #         break
+        # if not unvisited_node:
+        #     best_uct_node = self.best_uct(visited_list)
+        #     # if best_uct_node is None:
+        #     #     return None
+        # return unvisited_node or best_uct_node
+
+        expand_list.append(current_node)
+        if not current_node.child or  current_node.terrain.done(current_node.block):
+            return current_node
+        
+        first = True
+        maxUCT = 0
+        maxIndex = 0
+
+        for index, child in enumerate(current_node.child):
+            if child:
+                uctVal = self.calculate_uct(child)
+            if first: 
+                maxUCT = uctVal
+                first = False
+            if uctVal > maxUCT:
+                maxUCT = uctVal
+                maxIndex = index
+        return (self.traverse(current_node.child[maxIndex], expand_list))
+
 
     def rollout(self, node: Node) -> Node:
         count = 0
         result = 0
-        time_out = 0.1
         h = abs(node.block.p1.x - node.terrain.goal.x) + abs(node.block.p1.y - node.terrain.goal.y)
         if h == 0:
             h = 1
         k = 200 * math.log(h) + 1
-
-        time_start = time.time()
-        log_list = copy.deepcopy(self.open_list)
-        log_list.append(node)
-        #while time.time() < time_start + time_out:
+        
+        children = self.get_children(node)
+        for child in children:
+            if child == node.parent:
+                children.remove(child)
+        node.child = children
+        
         while count < k:
             if node.terrain.done(node.block):
                 result = 1
                 break
-            node = self.rollout_policy(node=node, log_list=log_list)
-            log_list.append(node)
+            node = self.rollout_policy(node=node)
             if node is None:
                 break
             count += 1
@@ -113,14 +161,16 @@ class Monte_Carlo_Tree_Search:
         return result
 
 
-    def rollout_policy(self, node: Node, log_list: list) -> Node:
+    def rollout_policy(self, node: Node) -> Node:
         children = self.get_children(node)
         for child in children:
             if child == node.parent:
-            #if child in self.open_list:
+                #if child in self.open_list:
                 children.remove(child)
         if not children:
             return None
+                #continue
+            #node.child.append(child)
         #result = []
         # for child in children:
         #     if child in log_list:
@@ -181,11 +231,15 @@ class Monte_Carlo_Tree_Search:
     def calculate_uct(self, node: Node) :
         #root = self.open_list[0]
 
+        if (node.n == 0):
+            return (float("inf"))
+
         w = node.reward
         n = node.n
         n_root = node.parent.n
         q = node.q
-        c = 1
+        c = math.sqrt(2)
+        #c = 1 
         x = math.sqrt((math.log(n_root, math.e)) / n)
         #c = math.sqrt(2)
         #x = math.sqrt(n_root) / (1 + n)

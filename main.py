@@ -38,12 +38,14 @@ class Game:
             fig = px.line(self.a_star_solver_agent.data_all_queue)
         elif(choise == 3):
             paths = self.monte_carlo_tree_search_agent.solve(self.terrain)
-            fig = px.line(self.monte_carlo_tree_search_agent.data_open_queue)
+            fig = px.line(self.monte_carlo_tree_search_agent.data_all_queue)
         else:
             return
         print("")
         print("--- Solved using A* in %s seconds ---" % (time.time() - start_time))
+        print("")
         print("Solution: ", self.pretty_print_paths(paths))
+        print("")
 
         fig.show()
 
@@ -84,6 +86,7 @@ def input_level():
 
 def input_algorithms():
     print("")
+    print("############### Choosen Algorithms ###############")
     print("1. Breadth First Search")
     print("2. A Star Search")
     print("3. Monte Carlo Tree Search")
